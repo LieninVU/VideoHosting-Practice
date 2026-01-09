@@ -1,0 +1,83 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# VSCode/IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS system files
+.DS_Store
+Thumbs.db
+
+# Environment and sensitive files
+.env
+*.env
+
+# Build and cache folders
+/build/
+/dist/
+/tmp/
+/temp/
+/coverage/
+
+# React specific (if Create React App)
+/React/video_hosting/build/
+.react-cache/
+*.cache
+
+# Server uploads/output
+/Server/VideoFiles/
+*.mp4
+*.mov
+*.avi
+
+# Logs
+logs
+logs/*
+*.log
+
+# Static analysis, test coverage
+/coverage/
+
+# Production artifacts
+*.tgz
+
+# Local database dumps or backups
+*.sqlite
+*.dump
+
+# Ignore local password files
+password.env
+
+# Ignore editor swap/lock/save/autosave files
+*.swp
+*.swx
+*.bak
+*.tmp
+*~
+
+# Ignore compiled files
+*.class
+*.exe
+*.dll
+*.out
+*.o
+*.so
+
+# Ignore macOS extended attributes
+.AppleDouble
+.LSOverride
+
+# Ignore Python artifacts (если используете утилиты Python)
+/__pycache__/
+*.pyc
+*.pyo
+*.pyd
