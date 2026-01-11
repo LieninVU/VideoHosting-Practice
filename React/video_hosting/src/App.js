@@ -1,4 +1,4 @@
-import React, { use } from 'react';
+import React from 'react';
 import ReactDOMClient from 'react-dom/client';
 import Header from './Components/Header';
 import Main from './Components/Main';
@@ -133,28 +133,32 @@ class App extends React.Component {
     render(){
       return(
         <AuthProvider>
-        <AuthConsumer>
             <BrowserRouter>
-                <Routes>
-                {({ login, handleLogOut }) => (
-                    <>
-                        <Header
-                            onMainClick={this.mainClick}
-                            onSignClick={this.singClick}
-                            onLogoutClick={handleLogOut}
-                            onUploadClick={this.uploadClick}
-                        />
-                        <Route path='/' element={
-                            <div>{this.renderContent(login)}</div>
-                        }/>
-                        <Route path='/video/:link' element={
-                            <Video/>
-                        }/>
-                    </>
-            )}
-                </Routes>
+                <AuthConsumer>
+                        {({ login, handleLogOut }) => (
+                            <>
+                                <Header
+                                    onMainClick={this.mainClick}
+                                    onSignClick={this.singClick}
+                                    onLogoutClick={handleLogOut}
+                                    onUploadClick={this.uploadClick}
+                                />
+                                <Routes>
+                                    
+                                        <Route path='/' element={
+                                            <div>{this.renderContent(login)}</div>
+                                        }/>
+                                        <Route path='/video/:link' element={
+                                            <Video
+                                                SERVER={serverUrl}
+                                            />
+                                        }/>
+                                    
+                                </Routes>
+                            </>
+                    )}
+                </AuthConsumer>
             </BrowserRouter>
-        </AuthConsumer>
         </AuthProvider>
       );
     }

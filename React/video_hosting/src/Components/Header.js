@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import  {useAuth, userAuth} from '../AuthContext'
+import  {useAuth} from '../AuthContext'
 
 
 const Header = ({onMainClick, onProfileClick, onSignClick, onUploadClick}) => {

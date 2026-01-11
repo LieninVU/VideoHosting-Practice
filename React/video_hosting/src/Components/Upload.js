@@ -7,10 +7,10 @@ const Upload = ({server}) => {
     const url = server + '/api/upload';
     return(
         <div className='upload'>
-            <form action={url} method='post' enctype="multipart/form-data">
+            <form action={url} method='post' encType="multipart/form-data">
                 <input type='text'name="title" placeholder='Input the Title of the Video' required />
                 <input type='text'name="description" placeholder='Input the Description of the Video' required/>
-                <label for='videoFile'>Upload The Video</label>
+                <label htmlFor='videoFile'>Upload The Video</label>
                 <input type='file' id='videoFile' name='videoFile' accept='video/*' required/>
                 <button type='submit'>Upload</button>
 

@@ -68,6 +68,14 @@ app.use(session({
 }));
 app.use(fileUpload());
 
+app.use('/video', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  express.static(videoFilePath)(req, res, next);
+});
+
+
+
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -242,6 +250,7 @@ INNER JOIN Accounts ON videos.user_id = Accounts.id `;
       title: video.title,
       description: video.description,
       viewsCount: video.views_count,
+      likesCount: video.likes_count,
       username: video.username,
       filename: video.filename
     }));
@@ -249,6 +258,64 @@ INNER JOIN Accounts ON videos.user_id = Accounts.id `;
     return res.status(200).json({success: true, videos: videos});
   })
 })
+
+
+app.get('/api/video/:link', async (req, res) =>{
+  const link = req.params.link;
+  const sql = `SELECT 
+    videos.id,
+    videos.title, 
+    videos.description, 
+    videos.views_count, 
+    videos.likes_count,
+    videos.filename,
+    Accounts.username 
+FROM videos
+INNER JOIN Accounts ON videos.user_id = Accounts.id
+WHERE videos.filename = ?`;
+  try{
+    connection.query(sql, [link], (err, results) => {
+      if(err){
+        return res.status(500).json({success: false, error: err.message})
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ success: false, error: 'Видео не найдено' });
+      }
+      let result = results[0];
+      fs.readFile(`${videoFilePath}${result.filename}`, (err) => {
+        if(err){
+          return res.status(404).json({success: false, message: 'We Dont`t Found The Video'});
+        }
+      });
+      const video = {
+        channelName: result.username,
+        title: result.title,
+        description: result.description,
+        views: result.views_count,
+        likes: result.likes_count,
+        videofile: `${req.protocol}://${req.get('host')}/video/${result.filename}`
+      }
+      return res.status(200).json({success: true, video: video});
+    })
+  } catch(error){
+    console.log('Error of Getting Video: ', error.message)
+    return res.status(500).json({success: false, error: error.message});
+  }
+})
+
+
+app.get('/video/:filename', (req, res) => {
+  const fileName = req.params.filename;
+  const videopath = path.join(videoFilePath, fileName);
+  fs.access(videopath, fs.constants.F_OK, (err) => {
+    if(err){
+      console.log('File isn`t Found');
+      return res.status(404).json({success: false, error: err.message});
+    }
+    res.sendFile(path.resolve(videopath));
+  });
+});
+
 
 app.post('/api/upload', async (req, res) =>{
   if(!req.files || !req.body.title || !req.body.description){
