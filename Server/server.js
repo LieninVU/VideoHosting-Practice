@@ -191,29 +191,47 @@ app.post('/api/logout', (req, res) => {
 });
 
 
-function isAuthenticated(req, res, next){
-  if(req.session.userId){
-    next();
-  }
-  else{
-    res.status(401).json({success: false, message: 'Unauthorizaed. Plesae log in.'});
-  }
+
+
+function validateUserSession(userId, callback){
+  const sql = 'SELECT id FROM Accounts WHERE id = ?';
+  connection.query(sql, [userId], (err, results) => {
+    if(err){
+      console.log('Error validation user session: ', err);
+      callback(false);
+    }else{
+      callback(results.length > 0);
+    }
+  })
 }
 
+function isAuthenticated(req, res, next){
+  if(!req.session.userId){
+    res.status(401).json({success: false, message: 'Unauthorized. Please log in.', isAuthenticated: false});
+  }
+  validateUserSession(req.session.userId, (isValid) => {
+    if(!isValid){
+      req.session.destroy(err =>{
+        if(err){
+          console.log('Error of destroing invalid session: ', err);
+        }
+        res.clearCookie('connect.sid');
+        return res.status(401).json({success: false, message: 'Session invalid. Please log in again.', isAuthenticated: false});
+      })
+    } else{
+      next();
+    }
+  })
+}
 
 
 app.get('/api/protected-data', isAuthenticated, (req, res) => {
   res.json({ success: true, message: `Welcome, user ${req.session.userLogin}! This is protected data.` });
 });
 
-app.get('/api/auth-status', (req,res) => {
-  if (req.session.userId) {
-    // Пользователь аутентифицирован
-    res.json({ isAuthenticated: true, userLogin: req.session.userLogin });
-  } else {
-    // Пользователь не аутентифицирован
-    res.json({ isAuthenticated: false, userLogin: null }); // userLogin должен быть null или undefined
-  }
+app.get('/api/auth-status', isAuthenticated, (req,res) => {
+  res.json({ isAuthenticated: true, userLogin: req.session.userLogin });
+  
 });
 
 
@@ -262,6 +280,7 @@ INNER JOIN Accounts ON videos.user_id = Accounts.id `;
 
 app.get('/api/video/:link', async (req, res) =>{
   const link = req.params.link;
+  const sqlAddViews = 'UPDATE videos SET views_count = views_count + 1 WHERE filename = ?';
   const sql = `SELECT 
     videos.id,
     videos.title, 
@@ -273,34 +292,38 @@ app.get('/api/video/:link', async (req, res) =>{
 FROM videos
 INNER JOIN Accounts ON videos.user_id = Accounts.id
 WHERE videos.filename = ?`;
-  try{
-    connection.query(sql, [link], (err, results) => {
+
+  connection.query(sqlAddViews, [link], (err, results) =>{
+    if(err){
+      console.log('Unsucsessful adding view: ', err.message);
+    }
+    console.log('We added views');
+  })
+
+  connection.query(sql, [link], (err, results) => {
+    if(err){
+      return res.status(500).json({success: false, error: err.message})
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, error: 'Видео не найдено' });
+    }
+    let result = results[0];
+    fs.readFile(`${videoFilePath}${result.filename}`, (err) => {
       if(err){
-        return res.status(500).json({success: false, error: err.message})
+        return res.status(404).json({success: false, message: 'We Dont`t Found The Video'});
       }
-      if (results.length === 0) {
-        return res.status(404).json({ success: false, error: 'Видео не найдено' });
-      }
-      let result = results[0];
-      fs.readFile(`${videoFilePath}${result.filename}`, (err) => {
-        if(err){
-          return res.status(404).json({success: false, message: 'We Dont`t Found The Video'});
-        }
-      });
-      const video = {
-        channelName: result.username,
-        title: result.title,
-        description: result.description,
-        views: result.views_count,
-        likes: result.likes_count,
-        videofile: `${req.protocol}://${req.get('host')}/video/${result.filename}`
-      }
-      return res.status(200).json({success: true, video: video});
-    })
-  } catch(error){
-    console.log('Error of Getting Video: ', error.message)
-    return res.status(500).json({success: false, error: error.message});
-  }
+    });
+    const video = {
+      channelName: result.username,
+      title: result.title,
+      description: result.description,
+      views: result.views_count,
+      likes: result.likes_count,
+      videofile: `${req.protocol}://${req.get('host')}/video/${result.filename}`
+    }
+    return res.status(200).json({success: true, video: video});
+  })
+
 })
 
 
@@ -317,7 +340,7 @@ app.get('/video/:filename', (req, res) => {
 });
 
 
-app.post('/api/upload', async (req, res) =>{
+app.post('/api/upload', isAuthenticated, async (req, res) =>{
   if(!req.files || !req.body.title || !req.body.description){
     return res.status(400).json({error: 'Server didnt have the file'});
   }
@@ -335,7 +358,7 @@ app.post('/api/upload', async (req, res) =>{
   console.log(file.mimetype);
   console.log(file.size);
   console.log(file.path);
-  
+
   try{
     await fs.mkdir(videoFilePath, {recursive: true});
     const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -343,7 +366,7 @@ app.post('/api/upload', async (req, res) =>{
     await file.mv(filePath);
     console.log("SUCSESSSSSSSSSSSSS");
     values = [accountId, title, description, fileName, filePath];
-    
+
   }catch (err){
     console.error('Upload Error: ', err);
   }
@@ -361,6 +384,12 @@ app.post('/api/upload', async (req, res) =>{
     return res.json({uploaded: true, message: 'You Uploaded the Video'});
   })
 });
+
+
+app.post('/api/addLike/:login/:filename', (req, res) => {
+  const login = req.params.login;
+  const filename = req.params.filename;
+})
 
 
 
