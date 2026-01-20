@@ -60,7 +60,7 @@ app.use(session({
   saveUninitialized: false,
   store: sessionStore,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7,
+    maxAge: 1000 * 60,
     httpOnly: true,
     secure: false,
     sameSite: false
@@ -113,16 +113,16 @@ app.post('/api/auth', async (req, res) => {
   
   const { login, password } = req.body; // Получаем login и password из req.body
   
-  try {
-    const loginExists = await isLoginExists(login); // Теперь login определен
-    if (!loginExists) {
-      // Если логин не существует, возвращаем 401 Unauthorized
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-    }
-  } catch (error) {
-    console.error('Error checking login existence:', error);
-    return res.status(500).json({ success: false, message: 'Server error during login check.' });
-  }
+  // try {
+  //   const loginExists = await isLoginExists(login); // Теперь login определен
+  //   if (!loginExists) {
+  //     // Если логин не существует, возвращаем 401 Unauthorized
+  //     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+  //   }
+  // } catch (error) {
+  //   console.error('Error checking login existence:', error);
+  //   return res.status(500).json({ success: false, message: 'Server error during login check.' });
+  // }
 
   const sql = 'SELECT * FROM Accounts WHERE login = ? AND password = ?';
   const values = [login, password]; // Используем переменные login и password
@@ -206,9 +206,24 @@ function validateUserSession(userId, callback){
 }
 
 function isAuthenticated(req, res, next){
-  if(!req.session.userId){
-    res.status(401).json({success: false, message: 'Unauthorized. Please log in.', isAuthenticated: false});
+  console.log(req.session.userId);
+
+  if(!req.session || !req.session.userId){
+    return res.status(401).json({success: false, message: 'Unauthorized. Please log in.', isAuthenticated: false});
   }
+  if(req.session.cookie.express && req.session.cookie.express < Date.now()){
+    req.session.destroy((err) =>{
+      if(err){
+        console.log('Unsuccessfuly Destroying the Session: ', err);
+      }
+      res.clearCookie('connect.sid');
+      return res.status(401).json({success: false, message: 'Session invalid. Please log in again.', isAuthenticated: false});
+    })
+    return;
+  }
+
+  console.log(req.session);
+  console.log(req.session.userId);
   validateUserSession(req.session.userId, (isValid) => {
     if(!isValid){
       req.session.destroy(err =>{
