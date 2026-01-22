@@ -211,7 +211,7 @@ function isAuthenticated(req, res, next){
   if(!req.session || !req.session.userId){
     return res.status(401).json({success: false, message: 'Unauthorized. Please log in.', isAuthenticated: false});
   }
-  if(req.session.cookie.express && req.session.cookie.express < Date.now()){
+  if(req.session.cookie.expires && req.session.cookie.expires < Date.now()){
     req.session.destroy((err) =>{
       if(err){
         console.log('Unsuccessfuly Destroying the Session: ', err);
