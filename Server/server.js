@@ -68,6 +68,9 @@ app.use(session({
 }));
 app.use(fileUpload());
 
+
+
+
 app.use('/video', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -296,6 +299,14 @@ INNER JOIN Accounts ON videos.user_id = Accounts.id `;
 app.get('/api/video/:link', async (req, res) =>{
   const link = req.params.link;
   const sqlAddViews = 'UPDATE videos SET views_count = views_count + 1 WHERE filename = ?';
+  const sqlCountLikes = `UPDATE video_hosting.videos v
+SET likes_count = (
+	SELECT COUNT(*)
+    FROM video_hosting.likes l
+    WHERE v.id = l.video_id
+)
+WHERE filename = ?;
+`;
   const sql = `SELECT 
     videos.id,
     videos.title, 
@@ -313,6 +324,13 @@ WHERE videos.filename = ?`;
       console.log('Unsucsessful adding view: ', err.message);
     }
     console.log('We added views');
+  })
+
+  connection.query(sqlCountLikes, [link], (err, results) => {
+    if(err){
+      console.log('Failed Couting the Likes', err.message);
+    }
+    console.log('We Count Likes');
   })
 
   connection.query(sql, [link], (err, results) => {
@@ -334,7 +352,8 @@ WHERE videos.filename = ?`;
       description: result.description,
       views: result.views_count,
       likes: result.likes_count,
-      videofile: `${req.protocol}://${req.get('host')}/video/${result.filename}`
+      videofile: `${req.protocol}://${req.get('host')}/video/${result.filename}`,
+      fileName: result.filename
     }
     return res.status(200).json({success: true, video: video});
   })
@@ -394,18 +413,35 @@ app.post('/api/upload', isAuthenticated, async (req, res) =>{
   // });
   connection.query(sqlAddVideo, values, (err, results) => {
     if(err){
-      res.status(500).json({error: 'Upload Video Error', message: err.cause.message})
+      return res.status(500).json({error: 'Upload Video Error', message: err.cause.message})
     }
     return res.json({uploaded: true, message: 'You Uploaded the Video'});
   })
 });
 
 
-app.post('/api/addLike/:login/:filename', (req, res) => {
-  const login = req.params.login;
-  const filename = req.params.filename;
-})
 
+app.post('/api/addLike/:filename', isAuthenticated, (req, res) => {
+  const userLogin = req.session.userLogin;
+  const filename = req.params.filename;
+  const sql = `INSERT INTO video_hosting.likes(user_id, video_id)
+SELECT a.id, v.id
+FROM video_hosting.accounts a
+JOIN video_hosting.videos v
+ON a.login = ? AND v.filename = ?;`
+
+  console.log('User login from session:', userLogin);
+  console.log('Filename from params:', filename);
+  connection.query(sql, [userLogin, filename], (err, results) => {
+    if(err){
+      return res.status(500).json({success: false, message: err.message})
+    }
+    console.log('You Add Like Successfuly');
+    return res.status(200).json({success: true, message: 'You Add Like Successfuly'})
+
+  })
+
+})
 
 
 app.listen(PORT, () => {

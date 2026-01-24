@@ -9,6 +9,7 @@ function Video({SERVER}){
     const [video, setVideo] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [ localLikes, setLocalLikes] = useState(0);
     const { userLogin, checkAuthStatus } = useAuth();
     
     
@@ -16,6 +17,12 @@ function Video({SERVER}){
     useEffect(() => {
         loadVideo(link);
     }, [link]);
+
+    useEffect(() => {
+        if(video.likes !== undefined){
+            setLocalLikes(video.likes);
+        }
+    }, [video.likes]);
 
     const loadVideo = async (link) => {
         try{
@@ -59,19 +66,30 @@ function Video({SERVER}){
     }
     console.log('Video object:', video);
 
-    // const addLike = async (videofile) =>{
-    //     try{
-    //         const response = await fetch(`${SERVER}/api/addlike/${userLogin}/${videofile}`);
-    //         if(!response.ok){
-    //             throw new Error(`Ошибка, вы не поставили лайк:  ${response.status}: ${response.statusText}`);
-    //         }
-    //         console.log('Like was set');
-    //     } catch(error){
-    //         console.log('Unsucsessful like set: ', error.message);
-    //     }
-    // }
+    const addLike = async (videofile) =>{
+        try{
+            const response = await fetch(`${SERVER}/api/addLike/${fileName}`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+            });
+            if(!response.ok){
+                let errorText;
+                // Попробуем получить JSON
+                errorText = await response.text();
+               
+                throw new Error(`Ошибка, вы не поставили лайк:  ${response.status}: ${errorText}`);
+            }
+            setLocalLikes(prevLikes => prevLikes + 1);
+            console.log('Like was set');
+        } catch(error){
+            console.log('Unsuccessful like set: ', error.message);
+            alert('Unsuccessful like set: ' + error.message)
+        }
+    }
 
-    const {channelName, title, description, views, likes, videofile} = video;
+    const {channelName, title, description, views, likes, videofile, fileName} = video;
+    
     return(
         <div className='video'>
             <video className='player' src={`${videofile}`} controls>
@@ -85,7 +103,7 @@ function Video({SERVER}){
                     <div className='video-description'>DESCRIPTION: <br/>{description}</div>
                 </div>
                 <div className='right-info'>
-                    <button className='video-likes' onClick={"() => addLike(videofile)"}>LIKES: {likes}</button>
+                    <button className='video-likes' onClick={() => addLike(videofile)}>LIKES: {localLikes}</button>
                 </div>
             </div>
         </div>
