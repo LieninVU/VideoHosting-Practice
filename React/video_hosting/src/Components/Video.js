@@ -10,6 +10,7 @@ function Video({SERVER}){
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [ localLikes, setLocalLikes] = useState(0);
+    const [ likeStatus, setLikeStatus] = useState(false);
     const { userLogin, checkAuthStatus } = useAuth();
     
     
@@ -19,10 +20,11 @@ function Video({SERVER}){
     }, [link]);
 
     useEffect(() => {
-        if(video.likes !== undefined){
+        if(video.likes !== undefined && video.id !== undefined){
             setLocalLikes(video.likes);
+            checkLikeStatus(video.id);
         }
-    }, [video.likes]);
+    }, [video.likes || video.id]);
 
     const loadVideo = async (link) => {
         try{
@@ -66,7 +68,7 @@ function Video({SERVER}){
     }
     console.log('Video object:', video);
 
-    const addLike = async (videofile) =>{
+    const addLike = async (fileName) => {
         try{
             const response = await fetch(`${SERVER}/api/addLike/${fileName}`, {
                 method: 'POST',
@@ -81,11 +83,62 @@ function Video({SERVER}){
                 throw new Error(`Ошибка, вы не поставили лайк:  ${response.status}: ${errorText}`);
             }
             setLocalLikes(prevLikes => prevLikes + 1);
+            setLikeStatus(true);
             console.log('Like was set');
         } catch(error){
             console.log('Unsuccessful like set: ', error.message);
             alert('Unsuccessful like set: ' + error.message)
         }
+    }
+
+    const removeLike = async (videoId) => {
+        try{
+            const response  = await fetch(`${SERVER}/api/removeLike/${videoId}`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+            });
+            if(!response.ok){
+                const errorText = await response.text();
+                throw new Error(`Error of Checking Like Status: ${response.status}: ${errorText}` );}
+            const status = await response.json();
+            if(status.likeStatus === false){setLikeStatus(false);}
+            setLocalLikes(prevLikes => prevLikes - 1);
+            
+        } catch(error){
+            console.log('Unsuccessful like remove: ', error.message);
+            alert('Unsuccessful like remove: ' + error.message)
+        }
+    }
+    const addRemoveLike = async (video) =>{
+        if(likeStatus){
+            await removeLike(video.id);
+        } else {
+            await addLike(video.fileName);
+        }
+
+    }
+
+
+    const checkLikeStatus = async (video_id) => {
+        try{
+        const response = await fetch(`${SERVER}/api/LikeStatus/${video_id}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+            });
+        if(!response.ok){
+            const errorText = await response.text()
+            throw new Error(`Error of Checking Like Status: ${response.status}: ${errorText}` );}
+        const status = await response.json();
+        console.log(status)
+        if(status.likeStatus === true){setLikeStatus(true);}
+        else{setLikeStatus(false);}
+        }
+        catch(error){
+            console.log(error.message);
+        }
+
     }
 
     const {channelName, title, description, views, likes, videofile, fileName} = video;
@@ -103,7 +156,7 @@ function Video({SERVER}){
                     <div className='video-description'>DESCRIPTION: <br/>{description}</div>
                 </div>
                 <div className='right-info'>
-                    <button className='video-likes' onClick={() => addLike(videofile)}>LIKES: {localLikes}</button>
+                    <button className='video-likes' onClick={() => addRemoveLike(video)}>{likeStatus ? 'Remove Like' : 'Add Likes'}LIKES: {localLikes}</button>
                 </div>
             </div>
         </div>

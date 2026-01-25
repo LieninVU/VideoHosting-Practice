@@ -48,10 +48,10 @@ const PORT = 3001;
 const videoFilePath = './VideoFiles/'
 const app = express();
 
-app.use(cors({
-  origin: `http://localhost:3000`,
-  credentials: true,
-}));
+// app.use(cors({
+//   origin: `http://localhost:3000`,
+//   credentials: true,
+// }));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(session({
@@ -347,6 +347,7 @@ WHERE videos.filename = ?`;
       }
     });
     const video = {
+      id: result.id,
       channelName: result.username,
       title: result.title,
       description: result.description,
@@ -437,8 +438,43 @@ ON a.login = ? AND v.filename = ?;`
       return res.status(500).json({success: false, message: err.message})
     }
     console.log('You Add Like Successfuly');
-    return res.status(200).json({success: true, message: 'You Add Like Successfuly'})
+    return res.status(200).json({success: true, likeStatus: true, message: 'You Add Like Successfuly'})
 
+  })
+
+})
+
+app.post('/api/removeLike/:video_id', isAuthenticated, (req, res) => {
+  const videoId = req.params.video_id;
+  const userId = req.session.userId;
+  const sql = `DELETE FROM video_hosting.likes WHERE user_id = ? AND video_id = ?;`;
+  connection.query(sql, [userId, videoId], (err, results) => {
+    if(err){
+      console.log('Unsuccessfyly removing like: ', err.message);
+      return res.status(501).json({success: false, message: err.message});
+    }
+    if(results.affectedRows === 1){
+      return res.status(200).json({success: true, likeStatus: false});
+    }
+  })
+})
+
+
+app.get('/api/LikeStatus/:video_id', isAuthenticated, (req, res) => {
+  const videoId = req.params.video_id;
+  const userId = req.session.userId;
+  const sql = `SELECT EXISTS (
+	SELECT 1 
+    FROM video_hosting.likes l
+	  WHERE l.user_id = ? AND l.video_id = ?
+    ) AS like_exists;`;
+  connection.query(sql, [userId, videoId], (err, results) => {
+    if(err){
+      console.log('Failed to get like status: ', err.message);
+      return res.status(500).json({success: false, message: err.message})
+    }
+    const exists = results[0].like_exists === 1 ? true : false;
+    return res.status(200).json({success: true, likeStatus: exists});
   })
 
 })
