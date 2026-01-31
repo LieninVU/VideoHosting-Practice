@@ -48,10 +48,10 @@ const PORT = 3001;
 const videoFilePath = './VideoFiles/'
 const app = express();
 
-// app.use(cors({
-//   origin: `http://localhost:3000`,
-//   credentials: true,
-// }));
+app.use(cors({
+  origin: `http://localhost:3000`,
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(session({
@@ -138,9 +138,10 @@ app.post('/api/auth', async (req, res) => {
     }
 
     const user = results[0];
+    // console.log("AUTH USER: ", user);
     req.session.userId= user.id;
     req.session.userLogin = user.login;
-
+    req.session.username = user.username;
     req.session.save(err => {
       if (err) {
           console.error('Session save error:', err);
@@ -170,12 +171,13 @@ app.post('/api/register', async (req, res) => {
     const newUserId = results.insertId;
     req.session.userId= newUserId;
     req.session.userLogin = req.body.login;
+    req.session.username = req.body.username;
     req.session.save(err => {
       if (err) {
           console.error('Session save error:', err);
           return res.status(500).json({ success: false, message: 'Session error.' });
       }
-      res.json({ success: true, message: 'Registration successful!', userId: results.insertId });
+      res.json({ success: true, message: 'Registration successful!', userId: results.insertId, userName: req.body.username });
     });
   })
 })
@@ -225,8 +227,10 @@ function isAuthenticated(req, res, next){
     return;
   }
 
-  console.log(req.session);
-  console.log(req.session.userId);
+  // console.log(req.session);
+  // console.log('userLogin: ', req.session.userLogin, 'userId: ', req.session.userId, 'userName: ', req.session.username);
+
+  // console.log(req.session.userId);
   validateUserSession(req.session.userId, (isValid) => {
     if(!isValid){
       req.session.destroy(err =>{
@@ -248,7 +252,12 @@ app.get('/api/protected-data', isAuthenticated, (req, res) => {
 });
 
 app.get('/api/auth-status', isAuthenticated, (req,res) => {
-  res.json({ isAuthenticated: true, userLogin: req.session.userLogin });
+  const userId = req.session.userId;
+  const userLogin = req.session.userLogin;
+  const username = req.session.username;
+  console.log('userLogin: ', userLogin, 'userId: ', userId, 'userName: ', username);
+
+  res.json({ isAuthenticated: true, userLogin: userLogin, userId: userId, userName: username });
   
 });
 
@@ -266,7 +275,7 @@ function isLoginExists(login){
 };
 
 app.get('/api/videos', (req, res) => {
-  console.log('API/VIDEOS');
+  // console.log('API/VIDEOS');
   const sql = `SELECT 
     videos.id,
     videos.title, 
@@ -477,6 +486,48 @@ app.get('/api/LikeStatus/:video_id', isAuthenticated, (req, res) => {
     return res.status(200).json({success: true, likeStatus: exists});
   })
 
+})
+
+app.get('/api/getVideoLikes/:userId', isAuthenticated, (req, res) => {
+  const userId = req.params.userId;
+  const sql = `SELECT a.username, v.title, v.description, v.filename FROM video_hosting.likes
+  JOIN video_hosting.accounts a ON a.id = video_hosting.likes.user_id
+  JOIN video_hosting.videos v ON v.id = video_hosting.likes.video_id
+  WHERE video_hosting.likes.user_id = ?`;
+  connection.query(sql, [userId], (err, results) => {
+    if(err){
+      console.log('Failed to get list of likes: ', err.message);
+      return res.status(500).json({success: false, message: err.message});
+    }
+    return res.status(200).json({success: true, data: results});
+  })
+})
+
+app.get('/api/getVideoUploaded/:userId', isAuthenticated, (req, res) => {
+  const userId = req.params.userId;
+  const sql = `SELECT a.username, v.title, v.description, v.filename FROM video_hosting.videos v
+JOIN video_hosting.accounts a ON a.id = v.user_id
+WHERE v.user_id = ?`;
+  connection.query(sql, [userId], (err, results) => {
+    if(err){
+      console.log('Failed to get list of uploaded: ', err.message);
+      return res.status(500).json({success: false, message: err.message});
+    }
+    return res.status(200).json({success: true, data: results});
+  })
+})
+
+app.get('/api/getProfileInfo/:userId', isAuthenticated, (req, res) => {
+  const userId = req.params.userId;
+  const sql = `SELECT username FROM video_hosting.accounts
+WHERE accounts.id= ?`;
+  connection.query(sql, [userId], (err, results) => {
+    if(err){
+      console.log('Failed to get profile data: ', err.message);
+      return res.status(500).json({success: false, message: err.message});
+    }
+    return res.status(200).json({success: true, username: results[0].username});
+  })
 })
 
 

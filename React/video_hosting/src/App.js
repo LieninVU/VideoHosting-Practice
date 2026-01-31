@@ -4,6 +4,7 @@ import Header from './Components/Header';
 import Main from './Components/Main';
 import Upload from './Components/Upload';
 import Sign from './Components/Sign';
+import Profile from './Components/Profile';
 import {BrowserRouter, Routes, Route, Link} from 'react-router-dom';
 import Video from './Components/Video';
 
@@ -47,7 +48,7 @@ class App extends React.Component {
                 //     password: '',
                 // });
                 if(loginContextFunction){
-                    loginContextFunction(data.login);
+                    loginContextFunction(data.login, data.userName);
                 }
                 this.mainClick();
             }
@@ -67,8 +68,9 @@ class App extends React.Component {
     }
 
     
-    renderContent = (login) =>{
-        const{Content} = this.state
+    renderContent = (login, checkAuthStatus) =>{
+        const{Content} = this.state;
+        checkAuthStatus();
         switch(Content){
             case 'main':
                 return (<Main SERVER={serverUrl}/>)
@@ -135,7 +137,7 @@ class App extends React.Component {
         <AuthProvider>
             <BrowserRouter>
                 <AuthConsumer>
-                        {({ login, handleLogOut }) => (
+                        {({ login, handleLogOut, checkAuthStatus, userName }) => (
                             <>
                                 <Header
                                     onMainClick={this.mainClick}
@@ -146,10 +148,15 @@ class App extends React.Component {
                                 <Routes>
                                     
                                         <Route path='/' element={
-                                            <div>{this.renderContent(login)}</div>
+                                            <div>{this.renderContent(login, checkAuthStatus)}</div>
                                         }/>
                                         <Route path='/video/:link' element={
                                             <Video
+                                                SERVER={serverUrl}
+                                            />
+                                        }/>
+                                        <Route path='/profile/:userId' element={
+                                            <Profile
                                                 SERVER={serverUrl}
                                             />
                                         }/>

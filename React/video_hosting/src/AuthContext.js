@@ -6,6 +6,9 @@ const AuthContext = createContext();
 export const AuthProvider = ({children}) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userLogin, setUserLogin] = useState('');
+    const [userId, setUserId] = useState('');
+    const [userName, setUserName] = useState('');
+
     const SERVER = 'http://localhost:3001'
     
     
@@ -21,17 +24,22 @@ export const AuthProvider = ({children}) => {
           if (data.isAuthenticated){
             setIsAuthenticated(true);
             setUserLogin(data.userLogin);
+            setUserId(data.userId);
+            setUserName(data.userName);
           }
           else{
             setIsAuthenticated(false);
             setUserLogin('');
+            setUserId('');
+            setUserName('');
           }
           return response;
         } catch (error) {
           console.error('Error of checking status of autheticated', error);
           setIsAuthenticated(false);
           setUserLogin('');
-          return response;
+          setUserId('');
+          setUserName('');
         }
     };
 
@@ -51,6 +59,8 @@ export const AuthProvider = ({children}) => {
         if(data.success){
           setIsAuthenticated(false);
           setUserLogin('');
+          setUserId('');
+          setUserName('');
         } else {
           alert(data.message);
         }
@@ -60,14 +70,15 @@ export const AuthProvider = ({children}) => {
       }
     };
 
-  const login = (login) => {
+  const login = (login, userName) => {
     setIsAuthenticated(true);
     setUserLogin(login);
+    setUserName(userName);
   };
 
 
   return (
-    <AuthContext.Provider value={{isAuthenticated, userLogin, handleLogOut, login, checkAuthStatus}}>
+    <AuthContext.Provider value={{isAuthenticated, userLogin, userId, userName, handleLogOut, login, checkAuthStatus}}>
         {children}
     </AuthContext.Provider>
   );

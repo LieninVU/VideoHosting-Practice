@@ -348,3 +348,48 @@ html, body {
     50% { opacity: 0; }
   }
   
+
+  .profilePage {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+  }
+  
+  .profile {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+
+  /* Заголовки секций */
+.profilePage a {
+  display: block;
+  margin: 40px 0 15px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2980b9;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Горизонтальная лента видео (карусель) */
+.horisonal-lent {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 16px;
+  padding: 10px 0;
+  margin-bottom: 40px;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #e0e0e0;
+}
+
+/* Скрываем полосу прокрутки (опционально) */
+.horisonal-lent::-webkit-scrollbar {
+  display: none;
+}
