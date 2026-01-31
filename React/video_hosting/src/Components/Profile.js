@@ -30,8 +30,14 @@ function Profile({SERVER}) {
     const getVideos = async () => {
         try{
             const [responseLike, responseUploaded] = await Promise.all([
-                fetch(`${SERVER}/api/getVideoLikes/${userId}`),
-                fetch(`${SERVER}/api/getVideoUploaded/${userId}`)
+                fetch(`${SERVER}/api/getVideoLikes/${userId}`,{
+                    method: 'GET',
+                    credentials: 'include'
+                }),
+                fetch(`${SERVER}/api/getVideoUploaded/${userId}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                })
             ]);
             if (!responseLike.ok) throw new Error(`Ошибка лайков: ${responseLike.status}`);
             if (!responseUploaded.ok) throw new Error(`Ошибка загруженных: ${responseUploaded.status}`);
@@ -48,7 +54,10 @@ function Profile({SERVER}) {
 
     const getProfileInfo = async () => {
         try{
-            const respone = await fetch(`${SERVER}/api/getProfileInfo/${userId}`);
+            const respone = await fetch(`${SERVER}/api/getProfileInfo/${userId}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
             if(!respone.ok){
                 const errorText = await respone.text();
                 throw new Error(`Error Failed Receiving of profile info: ${errorText}`);
@@ -64,7 +73,7 @@ function Profile({SERVER}) {
 
     return(
         <div className='profilePage'>
-            <div className='profile'>{username}</div>
+            <div className='profile'>Your Channel Name: {username}</div>
             <a>Your`s Videos</a>
             <div className='horisonal-lent'>
                 {uploadedVideos.map((video, index) =>(
