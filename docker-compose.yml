@@ -1,0 +1,62 @@
+services:
+  # База данных MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: video_hosting_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-video_hosting}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./Server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - video_network
+
+  # Серверное приложение Node.js
+  server:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: video_hosting_server
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      DB_NAME: ${DB_NAME:-video_hosting}
+      DB_PORT: 3306
+      SESSION_SECRET: ${SESSION_SECRET:-your-super-secret-session-key-change-this-in-production}
+      PORT: 3001
+    depends_on:
+      - mysql
+    volumes:
+      - ./Server/VideoFiles:/app/VideoFiles
+    networks:
+      - video_network
+
+  # Фронтенд React приложение
+  client:
+    build:
+      context: ./React
+      dockerfile: Dockerfile
+    container_name: video_hosting_client
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - video_network
+
+volumes:
+  mysql_data:
+
+networks:
+  video_network:
+    driver: bridge

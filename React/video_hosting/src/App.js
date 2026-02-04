@@ -10,7 +10,8 @@ import Video from './Components/Video';
 
 import { AuthProvider, AuthConsumer } from './AuthContext';
 
-const serverUrl = 'http://localhost:3001';
+const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+// const serverUrl = 'http://192.168.3.3:3001';
 
 
 class App extends React.Component {
@@ -27,7 +28,7 @@ class App extends React.Component {
 
     sendAuthData = async (endpoint, data, loginContextFunction) => {
         try{
-            const response = await fetch(`http://localhost:3001/api/${endpoint}`, {
+            const response = await fetch(`${serverUrl}/api/${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,7 +81,6 @@ class App extends React.Component {
                     onRegistrationClick={(props) => this.sendAuthData('register', props, login)}
                     />)
             case 'upload':
-                alert(serverUrl)
                 return (<Upload server={serverUrl} />)
         }
     }

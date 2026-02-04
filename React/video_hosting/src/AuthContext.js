@@ -9,7 +9,8 @@ export const AuthProvider = ({children}) => {
     const [userId, setUserId] = useState('');
     const [userName, setUserName] = useState('');
 
-    const SERVER = 'http://localhost:3001'
+    const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'
+    // const SERVER = 'http://192.168.3.3:3001'
     
     
     

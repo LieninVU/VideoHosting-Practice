@@ -18,11 +18,11 @@ const { NOTINITIALIZED } = require('dns');
 const knex = require('knex')({
   client: 'mysql2',
   connection: {
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'video_hosting',
-    port: 3306
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'root',
+    database: process.env.DB_NAME || 'video_hosting',
+    port: process.env.DB_PORT || 3306
   }
 });
 
@@ -50,6 +50,7 @@ const app = express();
 
 app.use(cors({
   origin: `http://localhost:3000`,
+  // origin: 'http://192.168.3.3:3000',
   credentials: true,
 }));
 app.use(express.json());
@@ -72,7 +73,7 @@ app.use(fileUpload());
 
 
 app.use('/video', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');//'http://localhost:3000''http://192.168.3.3:3000'
   res.header('Access-Control-Allow-Credentials', 'true');
   express.static(videoFilePath)(req, res, next);
 });
@@ -80,11 +81,11 @@ app.use('/video', (req, res, next) => {
 
 
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'video_hosting',
-    port: 3306
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'root',
+    database: process.env.DB_NAME || 'video_hosting',
+    port: process.env.DB_PORT || 3306
 });
 
 
@@ -99,7 +100,7 @@ connection.connect(err => {
 })
 
 app.get('/', (req, res) => {
-  connection.query('SELECT * FROM Accounts', (err, results) => {
+  connection.query('SELECT * FROM accounts', (err, results) => {
     if(err){
       return res.status(500).json({ error: err.message});
     }
@@ -127,7 +128,7 @@ app.post('/api/auth', async (req, res) => {
   //   return res.status(500).json({ success: false, message: 'Server error during login check.' });
   // }
 
-  const sql = 'SELECT * FROM Accounts WHERE login = ? AND password = ?';
+  const sql = 'SELECT * FROM accounts WHERE login = ? AND password = ?';
   const values = [login, password]; // Используем переменные login и password
   connection.query(sql, values, (err, results) => {
     if(err){
@@ -161,7 +162,7 @@ app.post('/api/register', async (req, res) => {
     return res.json({ success: false, error: 'Login already exists' });
   }
 
-  const sql = 'INSERT INTO Accounts (login, password, username) VALUES(?,?,?);'
+  const sql = 'INSERT INTO accounts (login, password, username) VALUES(?,?,?);'
   const values = [req.body.login, req.body.password, req.body.username];
   console.log(JSON.stringify(req.body))
   connection.query(sql, values, (err, results) =>{
@@ -199,7 +200,7 @@ app.post('/api/logout', (req, res) => {
 
 
 function validateUserSession(userId, callback){
-  const sql = 'SELECT id FROM Accounts WHERE id = ?';
+  const sql = 'SELECT id FROM accounts WHERE id = ?';
   connection.query(sql, [userId], (err, results) => {
     if(err){
       console.log('Error validation user session: ', err);
@@ -265,7 +266,7 @@ app.get('/api/auth-status', isAuthenticated, (req,res) => {
 
 function isLoginExists(login){
   return new Promise((resolve, reject) =>{
-    const sql = 'SELECT * FROM Accounts WHERE login = ?';
+    const sql = 'SELECT * FROM accounts WHERE login = ?';
     const value = [login];
     connection.query(sql, value,(err, results) =>{
       if(err) reject(err);
@@ -283,14 +284,15 @@ app.get('/api/videos', (req, res) => {
     videos.views_count, 
     videos.likes_count,
     videos.filename,
-    Accounts.username 
+    accounts.username 
 FROM videos
-INNER JOIN Accounts ON videos.user_id = Accounts.id `;
+INNER JOIN accounts ON videos.user_id = accounts.id `;
   
   connection.query(sql, (err, results) => {
     if(err){
       return res.status(500).json({success: false, error: err.message})
     }
+    if(!results || results.length == 0){return res.status(404).json({success: false, message: 'Video Table is Empty'}); }
     const videos = results.map(video => ({
       title: video.title,
       description: video.description,
@@ -299,7 +301,7 @@ INNER JOIN Accounts ON videos.user_id = Accounts.id `;
       username: video.username,
       filename: video.filename
     }));
-    console.log(videos[2].description)
+    
     return res.status(200).json({success: true, videos: videos});
   })
 })
@@ -323,9 +325,9 @@ WHERE filename = ?;
     videos.views_count, 
     videos.likes_count,
     videos.filename,
-    Accounts.username 
+    accounts.username 
 FROM videos
-INNER JOIN Accounts ON videos.user_id = Accounts.id
+INNER JOIN accounts ON videos.user_id = accounts.id
 WHERE videos.filename = ?`;
 
   connection.query(sqlAddViews, [link], (err, results) =>{
@@ -531,6 +533,6 @@ WHERE accounts.id= ?`;
 })
 
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

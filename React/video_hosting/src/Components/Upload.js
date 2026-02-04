@@ -1,9 +1,8 @@
 import React from "react";
 
 
-const Upload = ({server}) => {
+const Upload = ({server = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}) => {
 
-    alert(server)
     const url = server + '/api/upload';
     return(
         <div className='upload'>

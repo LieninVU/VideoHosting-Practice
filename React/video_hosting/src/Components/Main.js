@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from "react";
 
-function Main({SERVER}){
+function Main({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}){
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from 'react-router-dom';
 
-function Profile({SERVER}) {
+function Profile({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}) {
     const { userId: urlUserId } = useParams();
     const [userId, setUserId] = useState(urlUserId || '');
     const [username, setUsername] = useState('');

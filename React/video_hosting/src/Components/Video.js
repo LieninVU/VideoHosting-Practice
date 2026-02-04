@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from '../AuthContext';
 
 
-function Video({SERVER}){
+function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}){
     const {link} = useParams();
     const [video, setVideo] = useState({});
     const [loading, setLoading] = useState(true);

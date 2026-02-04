@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+Dockerfile
+.dockerignore
+build
+dist
+*.md
+*.env
+Server/
+!video_hosting/
