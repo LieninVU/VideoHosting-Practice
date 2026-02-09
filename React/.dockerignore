@@ -1,3 +1,4 @@
+# Ignore top-level node_modules
 node_modules
 npm-debug.log
 .git
@@ -11,4 +12,14 @@ dist
 *.md
 *.env
 Server/
+
+# Allow video_hosting directory but ignore its node_modules
 !video_hosting/
+
+# Inside video_hosting, ignore node_modules and other unnecessary files
+video_hosting/node_modules
+video_hosting/.git
+video_hosting/.gitignore
+video_hosting/.env
+video_hosting/build
+video_hosting/dist

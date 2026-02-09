@@ -80,24 +80,43 @@ app.use('/video', (req, res, next) => {
 
 
 
-const connection = mysql.createConnection({
+let connection;
+
+function connectToDatabase() {
+  connection = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'root',
     database: process.env.DB_NAME || 'video_hosting',
-    port: process.env.DB_PORT || 3306
-});
+    port: process.env.DB_PORT || 3306,
+    connectTimeout: 60000, // 60 seconds
+    acquireTimeout: 60000,
+    timeout: 60000,
+  });
 
+  connection.connect(err => {
+    if(err){
+      console.log("Connection error:", err);
+      console.log("Retrying in 5 seconds...");
+      setTimeout(connectToDatabase, 5000);
+    }
+    else{
+      console.log('Connected to database successfully!');
+    }
+  });
 
-connection.connect(err => {
-  if(err){
-    console.log(err);
-    console.log("EEEERRRRRROR");
-  }
-  else{
-    console.log('it\'s ok');
-  }
-})
+  // Handle disconnects
+  connection.on('error', (err) => {
+    console.log('Database error:', err);
+    if(err.code === 'PROTOCOL_CONNECTION_LOST') {
+      connectToDatabase();
+    } else {
+      throw err;
+    }
+  });
+}
+
+connectToDatabase();
 
 app.get('/', (req, res) => {
   connection.query('SELECT * FROM accounts', (err, results) => {
@@ -143,6 +162,7 @@ app.post('/api/auth', async (req, res) => {
     req.session.userId= user.id;
     req.session.userLogin = user.login;
     req.session.username = user.username;
+    req.session.isAdmin = user.admin === 1;
     req.session.save(err => {
       if (err) {
           console.error('Session save error:', err);
@@ -173,6 +193,7 @@ app.post('/api/register', async (req, res) => {
     req.session.userId= newUserId;
     req.session.userLogin = req.body.login;
     req.session.username = req.body.username;
+    req.session.isAdmin = false;
     req.session.save(err => {
       if (err) {
           console.error('Session save error:', err);
@@ -245,6 +266,15 @@ function isAuthenticated(req, res, next){
       next();
     }
   })
+}
+
+
+
+function isAdmin(req, res, next){
+  if(req.session.userId && req.user.isAdmin){
+    next();
+  }
+  else{ res.status(403).json({success: false, message: 'Admin access reqirement'});}
 }
 
 
@@ -531,6 +561,43 @@ WHERE accounts.id= ?`;
     return res.status(200).json({success: true, username: results[0].username});
   })
 })
+
+
+app.post('api/addComment/:videoId', isAuthenticated, (req, res) => {
+  if(!req.body.comment){
+    return res.status(400).json({success:false, message: 'server didn`t resived the text of comment'});
+  }
+  const videoId = req.params.videoId;
+  const userId = req.session.userId;
+  const comment = req.body.comment;
+  const sql = `INSERT INTO video_hosting.comments (video_id, user_id, content)
+VALUES (?, ?, ?);`;
+connection.query(sql, [videoId, userId, comment], (err, results) => {
+  if(err){ return res.status(500).json({success: false, message: err.message});}
+  return res.stustus(200).json({success: true, message: 'You Added The Comment'});
+})
+})
+
+app.get('api/GetComments/:videoId', (req, res) => {
+  const sql = `SELECT a.username, c.content FROM video_hosting.comments AS c
+  JOIN accounts a ON a.id = c.user_id
+  WHERE c.video_id = ?
+  ORDER BY c.created_at DESC;`
+  const videoId = req.params.videoId;  
+  connection.query(sql, [videoId], (err, results) => {
+    if(err){ return res.status(500).json({success: false, message: err.message});}
+    if(!results || results.length == 0){return res.status(404).json({success: false, message: 'Comments Table is Empty'}); }
+    const comments = results.map(comment => ({
+      username: comment.username,
+      content: comment.content
+    }))
+    return res.status(200).json({success: true, comments: comments});
+  })
+})
+
+
+
+
 
 
 app.listen(PORT, '0.0.0.0', () => {

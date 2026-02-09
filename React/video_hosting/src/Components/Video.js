@@ -12,6 +12,8 @@ function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3
     const [ localLikes, setLocalLikes] = useState(0);
     const [ likeStatus, setLikeStatus] = useState(false);
     const { userLogin, checkAuthStatus } = useAuth();
+    const [comments, setComments] = useState([]);
+    const [commentValue, setCommentValue] = useState('');
     
     
 
@@ -23,8 +25,22 @@ function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3
         if(video.likes !== undefined && video.id !== undefined){
             setLocalLikes(video.likes);
             checkLikeStatus(video.id);
+            loadComments(video.id);
         }
     }, [video.likes || video.id]);
+
+    const loadComments = async (videoId) => {
+        try{
+            const response = await fetch(`${SERVER}/api/GetComments/${videoId}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if(!response.ok){ throw new Error(`Ошибка ${response.status}: ${response.statusText}`);}
+            const result = await response.json();
+            if(result.success){ setComments(result.comments)
+            } 
+        } catch(error){console.log(error.message);}
+    }
 
     const loadVideo = async (link) => {
         try{
@@ -141,6 +157,33 @@ function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3
 
     }
 
+    const addComment = async () => {
+        if(commentValue.length === 0){
+            console.log('You Need Input Comment');
+            alert('You Need Input Comment');
+        }
+        const comment = commentValue;
+        try{
+            const response = await fetch(`${SERVER}/api/addComment/${video.id}`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if(!response.ok){
+                const errorText = await response.text();
+                throw new Error(`Unsuccessfuly Commpent Post: ${response.status} : ${errorText}`);
+            }
+            const result = await response.json();
+            if(result.success){
+                setCommentValue('');
+                loadComments(video.id);
+            }
+            else{ alert('Please LogIn');}
+        } catch(error){
+            console.log(error.message);
+        }
+    }
+
+
     const {channelName, title, description, views, likes, videofile, fileName} = video;
     
     return(
@@ -157,6 +200,22 @@ function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3
                 </div>
                 <div className='right-info'>
                     <button className='video-likes' onClick={() => addRemoveLike(video)}>{likeStatus ? 'Remove Like' : 'Add Likes'}LIKES: {localLikes}</button>
+                </div>
+            </div>
+            <div className='comments'>
+                <div id='writeComment'>
+                    <form>
+                        <input className="button" id="inputComment" type='text' placeholder='Write Your Comment' onChange={(e) => setCommentValue(e.target.value)}></input>
+                        <button className='button' type='button' onClick={() => addComment()}>Add Comment</button>
+                    </form>
+                </div>
+                <div className='listComments'>
+                    {comments.map((comment, index) => (
+                        <div className='comment' key={index}>
+                            <a>{comment.username}</a>
+                            <div>{comment.content}</div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
