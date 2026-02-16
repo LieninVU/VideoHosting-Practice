@@ -475,3 +475,18 @@ html, body {
   width: 100%;
   gap: 15px;
 }
+
+.comment{
+  display: flex;
+    flex-direction: column;
+    justify-content:space-around;
+    align-items: center;
+    width: 90%;
+    max-width: 400px;
+    background-color: #000;
+    border: 2px solid #0f0;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 0 20px #0f0;
+    text-align: center;
+}

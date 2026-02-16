@@ -563,7 +563,7 @@ WHERE accounts.id= ?`;
 })
 
 
-app.post('api/addComment/:videoId', isAuthenticated, (req, res) => {
+app.post('/api/addComment/:videoId', isAuthenticated, (req, res) => {
   if(!req.body.comment){
     return res.status(400).json({success:false, message: 'server didn`t resived the text of comment'});
   }
@@ -574,11 +574,11 @@ app.post('api/addComment/:videoId', isAuthenticated, (req, res) => {
 VALUES (?, ?, ?);`;
 connection.query(sql, [videoId, userId, comment], (err, results) => {
   if(err){ return res.status(500).json({success: false, message: err.message});}
-  return res.stustus(200).json({success: true, message: 'You Added The Comment'});
+  return res.status(200).json({success: true, message: 'You Added The Comment'});
 })
 })
 
-app.get('api/GetComments/:videoId', (req, res) => {
+app.get('/api/GetComments/:videoId', (req, res) => {
   const sql = `SELECT a.username, c.content FROM video_hosting.comments AS c
   JOIN accounts a ON a.id = c.user_id
   WHERE c.video_id = ?

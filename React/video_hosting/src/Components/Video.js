@@ -166,7 +166,9 @@ function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3
         try{
             const response = await fetch(`${SERVER}/api/addComment/${video.id}`, {
                 method: 'POST',
-                credentials: 'include'
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({comment: commentValue})
             });
             if(!response.ok){
                 const errorText = await response.text();
@@ -205,8 +207,8 @@ function Video({SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3
             <div className='comments'>
                 <div id='writeComment'>
                     <form>
-                        <input className="button" id="inputComment" type='text' placeholder='Write Your Comment' onChange={(e) => setCommentValue(e.target.value)}></input>
-                        <button className='button' type='button' onClick={() => addComment()}>Add Comment</button>
+                        <input className="button" id="inputComment" type='text' placeholder='Write Your Comment' value={commentValue} onChange={(e) => setCommentValue(e.target.value)}></input>
+                        <button className='button' type='button' onClick={() => {console.log('BUTTON CLICKED'); addComment()}}>Add Comment</button>
                     </form>
                 </div>
                 <div className='listComments'>
