@@ -309,6 +309,7 @@ app.get('/api/videos', (req, res) => {
   // console.log('API/VIDEOS');
   const sql = `SELECT 
     videos.id,
+    user_id,
     videos.title, 
     videos.description, 
     videos.views_count, 
@@ -325,6 +326,7 @@ INNER JOIN accounts ON videos.user_id = accounts.id `;
     if(!results || results.length == 0){return res.status(404).json({success: false, message: 'Video Table is Empty'}); }
     const videos = results.map(video => ({
       title: video.title,
+      userId: video.user_id,
       description: video.description,
       viewsCount: video.views_count,
       likesCount: video.likes_count,

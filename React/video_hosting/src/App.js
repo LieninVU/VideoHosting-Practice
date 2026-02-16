@@ -7,6 +7,8 @@ import Sign from './Components/Sign';
 import Profile from './Components/Profile';
 import {BrowserRouter, Routes, Route, Link} from 'react-router-dom';
 import Video from './Components/Video';
+import Admin from 'Components/Admin';
+
 
 import { AuthProvider, AuthConsumer } from './AuthContext';
 
@@ -160,7 +162,9 @@ class App extends React.Component {
                                                 SERVER={serverUrl}
                                             />
                                         }/>
-                                    
+                                        <Route path='/admin-panel/' element={
+                                            <Admin SERVER={serverUrl}/>
+                                        }/>
                                 </Routes>
                             </>
                     )}
