@@ -57,11 +57,12 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(session({
   secret: process.env.SESSION_SECRET,
-  resave: false,
+  resave: true,
   saveUninitialized: false,
   store: sessionStore,
+  rolling: true,
   cookie: {
-    maxAge: 1000 * 60,
+    maxAge: 1000 * 60 * 15,
     httpOnly: true,
     secure: false,
     sameSite: false
@@ -249,6 +250,9 @@ function isAuthenticated(req, res, next){
     return;
   }
 
+  const sessionTime = 1000 * 60 * 15;
+  req.session.cookie.maxAge = sessionTime ;
+  req.session.cookie.expires = new Date(Date.now() + sessionTime);
   // console.log(req.session);
   // console.log('userLogin: ', req.session.userLogin, 'userId: ', req.session.userId, 'userName: ', req.session.username);
 
@@ -271,7 +275,7 @@ function isAuthenticated(req, res, next){
 
 
 function isAdmin(req, res, next){
-  if(req.session.userId && req.user.isAdmin){
+  if(req.session.userId && req.session.isAdmin){
     next();
   }
   else{ res.status(403).json({success: false, message: 'Admin access reqirement'});}
@@ -325,6 +329,7 @@ INNER JOIN accounts ON videos.user_id = accounts.id `;
     }
     if(!results || results.length == 0){return res.status(404).json({success: false, message: 'Video Table is Empty'}); }
     const videos = results.map(video => ({
+      id: video.id,
       title: video.title,
       userId: video.user_id,
       description: video.description,
@@ -599,7 +604,54 @@ app.get('/api/GetComments/:videoId', (req, res) => {
 
 
 
+app.get('/api/isAdmin', isAuthenticated, isAdmin, (req, res) => {
+  return res.status(200).json({success: true, isAdmin: true});
+})
 
+
+app.get('/api/accounts', isAuthenticated, isAdmin, (req, res) => {
+  const sql = `SELECT * FROM accounts`;
+  connection.query(sql, (err,results) => {
+    if(err){ return res.status(500).json({success: false, message: err.message});}
+    return res.status(200).json({success: true, accounts: results});
+  })
+})
+
+
+app.post('/api/deleteVideo/:videoId', isAuthenticated, isAdmin, async (req, res) => {
+  const sqlFilePath = 'SELECT filepath FROM videos WHERE id = ?';
+  const videoId = req.params.videoId;
+  
+  let filePath;
+  connection.query(sqlFilePath, [videoId], async (err, results) => {
+    if(err){ return res.status(500).json({success: false, message: err.message});}
+    if(results.length > 0){ filePath = results[0].filepath; }
+    try{
+          fs.unlink(filePath)
+        
+    }catch(error){
+      console.error('Unsuccessfull Deliting VideoFile\n', error)
+      return res.status(500).json({success: false, message: error})
+    }
+  })
+  
+  
+  
+  const sqlDelete = 'DELETE FROM videos WHERE id = ?';
+  connection.query(sqlDelete, [videoId], (err, results) => {
+    if(err){ return res.status(500).json({success: false, message: err.message});}
+    return res.status(200).json({success: true});
+  })
+})
+
+app.post('/api/deleteAccount/:accountId', isAuthenticated, isAdmin, (req, res) => {
+  const sql = 'DELETE FROM accounts WHERE id = ?';
+  const accountId = req.params.accountId;
+  connection.query(sql, [accountId], (err, results) => {
+    if(err){ return res.status(500).json({success: false, message: err.message})}
+    return res.status(200).json({success: true});
+  })
+})
 
 
 app.listen(PORT, '0.0.0.0', () => {
